@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vpn-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - XUI_API_URL=http://xui:54321
+      - XUI_API_KEY=${XUI_API_KEY:-your_api_key_here}
+      - DATABASE_URL=sqlite+aiosqlite:///./vpn.db
+      - SECRET_KEY=${SECRET_KEY:-your_secret_key_change_this}
+    volumes:
+      - backend_data:/app
+    depends_on:
+      - xui
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vpn-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  xui:
+    image: ghcr.io/alireza0/x-ui:latest
+    container_name: vpn-xui
+    ports:
+      - "54321:54321"
+      - "443:443"
+    environment:
+      - XUI_V2RAY_LOCATION_ASSET_DIR=/usr/share/x-ui
+    volumes:
+      - xui_data:/etc/x-ui
+      - certs:/cert
+    restart: unless-stopped
+
+volumes:
+  backend_data:
+  xui_data:
+  certs:
+
+networks:
+  default:
+    name: vpn-network
